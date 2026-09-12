@@ -244,6 +244,95 @@
   }
 
 
+
+  /* ── 결제수단 칩 ────────────────────── */
+  .pay{
+    display:inline-block; margin-top:5px;
+    padding:2px 7px; border-radius:6px;
+    font-size:10.5px; font-weight:600; font-style:normal;
+    letter-spacing:.02em; white-space:nowrap;
+  }
+  .pay.cash{ background:var(--pay-cash-bg); color:var(--pay-cash-fg); }
+  .pay.transfer{ background:var(--pay-tr-bg); color:var(--pay-tr-fg); }
+  .pay.none{ background:var(--surface-2); color:var(--ink-2); }
+
+  .paypick{ display:inline-flex; }
+  .paypick button{
+    padding:9px 12px;
+    border:1px solid var(--line-2);
+    background:var(--surface); color:var(--ink-2);
+    font:inherit; font-size:12.5px; font-weight:600;
+    cursor:pointer;
+  }
+  .paypick button + button{ border-left:0; }
+  .paypick button:first-child{ border-radius:9px 0 0 9px; }
+  .paypick button:last-child{ border-radius:0 9px 9px 0; }
+  .paypick button.on{
+    background:var(--ink); border-color:var(--ink); color:var(--paper);
+  }
+
+  /* ── 거래 직접 추가 ─────────────────── */
+  .addbtn{
+    margin-left:auto;
+    padding:6px 11px;
+    border:1px solid var(--line-2); border-radius:8px;
+    background:var(--surface); color:var(--ink);
+    font:inherit; font-size:12px; font-weight:600;
+    letter-spacing:0;
+    cursor:pointer;
+  }
+  .addbtn:active{ background:var(--surface-2); }
+  h2.with-btn{ display:flex; align-items:center; gap:10px; }
+
+  .addbox{
+    margin:0 0 14px;
+    border:1px solid var(--t1-line);
+    border-radius:var(--r);
+    background:var(--surface);
+    box-shadow:var(--shadow);
+    padding:15px;
+  }
+  .addbox h3{
+    margin:0 0 4px;
+    font-family:"Song Myung", serif;
+    font-size:15px; font-weight:400;
+  }
+  .addbox .why{ margin:0 0 14px; font-size:12px; line-height:1.6; color:var(--ink-2); }
+  .addrow{ display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-bottom:12px; }
+  .addrow label{ font-size:12px; color:var(--ink-2); }
+  input[type="time"]{
+    padding:9px 10px;
+    border:1px solid var(--line-2); border-radius:9px;
+    background:var(--surface); color:var(--ink);
+    font:inherit; font-size:13px;
+  }
+  .additems{ border-top:1px solid var(--line); }
+  .additems .line:first-child{ padding-top:11px; }
+  .additems .line.zero .ln{ color:var(--ink-2); }
+  .additems .line .rt{ font-size:11px; color:var(--ink-2); }
+  .addfoot{
+    display:flex; align-items:center; gap:9px;
+    margin-top:14px; padding-top:13px;
+    border-top:1px solid var(--line);
+  }
+  .addsum{
+    font-family:"IBM Plex Mono", monospace;
+    font-variant-numeric:tabular-nums;
+    font-size:19px; font-weight:600;
+  }
+  .addfoot button{
+    padding:10px 15px;
+    border:1px solid var(--line-2); border-radius:9px;
+    background:var(--surface); color:var(--ink);
+    font:inherit; font-size:13px; font-weight:600;
+    cursor:pointer;
+  }
+  .addfoot button.primary{
+    margin-left:auto;
+    border-color:var(--ink); background:var(--ink); color:var(--paper);
+  }
+  .addfoot button.primary:disabled{ opacity:.3; cursor:default; }
+
   /* ── 구글 시트 연동 ─────────────────── */
   .sync{
     margin:30px 0 0;
@@ -357,6 +446,7 @@
   <div class="wrap"><div class="tabs" id="tabs" role="tablist"></div></div>
 </div>
 
+<div class="wrap" id="addwrap"></div>
 <div class="wrap" id="body"></div>
 
 
@@ -477,7 +567,8 @@
     if (!Store.all().length){
       bodyEl.innerHTML =
         '<div class="empty">아직 저장된 판매 기록이 없습니다.<br>' +
-        '계산기에서 <b>판매 완료</b>를 누르면 여기에 쌓입니다.</div>';
+        '계산기에서 <b>현금</b> 또는 <b>계좌이체</b>를 누르면 여기에 쌓입니다.<br><br>' +
+        '<button class="addbtn" type="button" id="addOpen" style="margin:0">+ 거래 직접 추가</button></div>';
       document.getElementById('xlsx').disabled = true;
       return;
     }
@@ -492,6 +583,9 @@
       '<div class="card"><div class="k">판매 수량</div><div class="v">' + s.count + '<small>개</small></div></div>' +
       '<div class="card"><div class="k"><i class="dot t1"></i>글자취미</div><div class="v">' + won(s.perTeam.t1) + '<small>원</small></div></div>' +
       '<div class="card"><div class="k"><i class="dot t2"></i>한주한자</div><div class="v">' + won(s.perTeam.t2) + '<small>원</small></div></div>' +
+      '<div class="card"><div class="k">현금</div><div class="v">' + won(s.perPay.cash) + '<small>원</small></div></div>' +
+      '<div class="card"><div class="k">계좌</div><div class="v">' + won(s.perPay.transfer) + '<small>원</small></div></div>' +
+      (s.perPay.none ? '<div class="card"><div class="k">결제수단 미지정</div><div class="v">' + won(s.perPay.none) + '<small>원</small></div></div>' : '') +
       '</div>';
 
     /* 상품별 집계 */
@@ -509,12 +603,14 @@
       '</td><td class="num">' + won(s.total) + '</td></tr></tfoot></table></div>';
 
     /* 거래 목록 */
-    html += '<h2>거래 내역 · 눌러서 수정</h2>';
+    html += '<h2 class="with-btn">거래 내역 · 눌러서 수정' +
+      '<button class="addbtn" type="button" id="addOpen">+ 거래 추가</button></h2>';
     records.forEach(r => {
       const open = r.id === openId;
       html += '<div class="rec' + (open ? ' open' : '') + '" data-id="' + r.id + '">' +
         '<button class="rec-head" type="button" data-act="toggle">' +
-          '<span class="rec-when">' + Store.shortDate(r.date) + '<br>' + r.time + '</span>' +
+          '<span class="rec-when">' + Store.shortDate(r.date) + '<br>' + r.time +
+            '<br><i class="pay ' + (r.pay || 'none') + '">' + Store.payLabel(r.pay) + '</i></span>' +
           '<span class="rec-items">' + itemSummary(r) + '</span>' +
           '<span class="rec-amt">' + won(Store.recTotal(r)) + '<span class="chev">' + (open ? '⌃' : '⌄') + '</span></span>' +
         '</button>' +
@@ -550,6 +646,10 @@
           (CATALOG[id].retired ? ' (단종)' : '') + '</option>').join('') +
         '</select>';
     }
+    h += '<span class="paypick" data-act="pay">' +
+      ['cash','transfer',''].map(v =>
+        '<button type="button" data-pay="' + v + '"' + ((r.pay || '') === v ? ' class="on"' : '') + '>' +
+        Store.payLabel(v) + '</button>').join('') + '</span>';
     h += '<label>날짜 <input type="date" data-act="date" value="' + r.date + '"></label>';
     h += '<button class="del" type="button" data-act="del">삭제</button>';
     h += '</div></div>';
@@ -558,6 +658,9 @@
 
   /* ── 조작 ───────────────────────────── */
   function bind(){
+    const addOpen = document.getElementById('addOpen');
+    if (addOpen) addOpen.addEventListener('click', openAdd);
+
     bodyEl.querySelectorAll('.rec').forEach(box => {
       const id = box.dataset.id;
 
@@ -584,6 +687,13 @@
         selected = dateIn.value;
         toast('날짜를 옮겼습니다');
         touched();
+      });
+
+      box.querySelectorAll('[data-act="pay"] button').forEach(b => {
+        b.addEventListener('click', () => {
+          Store.update(id, { pay: b.dataset.pay });
+          touched();
+        });
       });
 
       const del = box.querySelector('[data-act="del"]');
@@ -633,14 +743,17 @@
 
     /* 1. 일자별 요약 */
     const s1rows = [];
-    let gTotal = 0, gCount = 0, gSales = 0, gT1 = 0, gT2 = 0;
+    let gTotal = 0, gCount = 0, gSales = 0, gT1 = 0, gT2 = 0, gCash = 0, gTr = 0, gNone = 0;
     days.slice().reverse().forEach(d => {
       const s = Store.summarize(d.records);
-      s1rows.push([d.date, Store.weekday(d.date), s.sales, s.count, s.perTeam.t1, s.perTeam.t2, s.total]);
+      s1rows.push([d.date, Store.weekday(d.date), s.sales, s.count,
+                   s.perTeam.t1, s.perTeam.t2,
+                   s.perPay.cash, s.perPay.transfer, s.perPay.none, s.total]);
       gTotal += s.total; gCount += s.count; gSales += s.sales;
       gT1 += s.perTeam.t1; gT2 += s.perTeam.t2;
+      gCash += s.perPay.cash; gTr += s.perPay.transfer; gNone += s.perPay.none;
     });
-    s1rows.push(['합계', '', gSales, gCount, gT1, gT2, gTotal]);
+    s1rows.push(['합계', '', gSales, gCount, gT1, gT2, gCash, gTr, gNone, gTotal]);
 
     /* 2. 상품별 판매 */
     const s2rows = [];
@@ -656,19 +769,21 @@
     days.slice().reverse().forEach(d => {
       d.records.slice().sort((a,b) => a.ts - b.ts).forEach(r => {
         const txt = r.lines.map(l => (CATALOG[l.id] ? CATALOG[l.id].nm : l.id) + ' ×' + l.qty).join(', ');
-        s3rows.push([r.date, Store.weekday(r.date), r.time, txt, Store.recCount(r), Store.recTotal(r)]);
+        s3rows.push([r.date, Store.weekday(r.date), r.time, Store.payLabel(r.pay), txt,
+                     Store.recCount(r), Store.recTotal(r)]);
       });
     });
 
     const blob = buildXlsx([
-      { name:'일자별 요약', widths:[13,7,10,10,15,15,15],
-        header:['날짜','요일','판매 건수','판매 수량','글자취미 매출','한주한자 매출','합계 매출'],
+      { name:'일자별 요약', widths:[13,7,10,10,15,15,13,13,13,15],
+        header:['날짜','요일','판매 건수','판매 수량','글자취미 매출','한주한자 매출',
+                '현금','계좌','결제수단 미지정','합계 매출'],
         rows:s1rows },
       { name:'상품별 판매', widths:[13,7,12,26,11,9,13],
         header:['날짜','요일','팀','상품','단가','수량','금액'],
         rows:s2rows },
-      { name:'거래 내역', widths:[13,7,8,46,9,13],
-        header:['날짜','요일','시각','상품','수량','금액'],
+      { name:'거래 내역', widths:[13,7,8,10,46,9,13],
+        header:['날짜','요일','시각','결제','상품','수량','금액'],
         rows:s3rows }
     ]);
 
@@ -790,6 +905,92 @@
     });
 
     Sync.start();
+  }
+
+  /* ── 거래 직접 추가 ─────────────────── */
+  const addWrap = document.getElementById('addwrap');
+  let draft = null;
+
+  function openAdd(){
+    const now = new Date();
+    draft = { date: Store.dateKey(now), time: Store.timeKey(now), pay:'', qty:{} };
+    renderAdd();
+    addWrap.scrollIntoView({ block:'start', behavior:'smooth' });
+  }
+  function closeAdd(){ draft = null; renderAdd(); }
+
+  function draftTotal(){
+    if (!draft) return 0;
+    return Object.keys(draft.qty).reduce((sum, id) => sum + CATALOG[id].pr * draft.qty[id], 0);
+  }
+
+  function renderAdd(){
+    if (!draft){ addWrap.innerHTML = ''; return; }
+    let h = '<div class="addbox"><h3>거래 직접 추가</h3>' +
+      '<p class="why">놓친 판매를 나중에 채워 넣을 때 씁니다. 날짜와 시각을 실제 판매 시점으로 맞추면 ' +
+      '입금내역과 대조하기 쉽습니다.</p>' +
+      '<div class="addrow">' +
+        '<label>날짜 <input type="date" id="adDate" value="' + draft.date + '"></label>' +
+        '<label>시각 <input type="time" id="adTime" value="' + draft.time + '"></label>' +
+      '</div>' +
+      '<div class="addrow"><span class="paypick" id="adPay">' +
+        ['cash','transfer',''].map(v =>
+          '<button type="button" data-pay="' + v + '"' + (draft.pay === v ? ' class="on"' : '') + '>' +
+          Store.payLabel(v) + '</button>').join('') +
+      '</span></div>' +
+      '<div class="additems">';
+
+    Object.keys(CATALOG).forEach(id => {
+      const c = CATALOG[id], q = draft.qty[id] || 0;
+      h += '<div class="line' + (q ? '' : ' zero') + '">' +
+        '<span class="ln">' + esc(c.nm) + (c.retired ? ' <span class="rt">(단종)</span>' : '') +
+        '<br><span class="lp">' + won(c.pr) + '원' +
+        (q ? ' × ' + q + ' = ' + won(c.pr * q) + '원' : '') + '</span></span>' +
+        '<span class="stepper">' +
+          '<button type="button" data-ad="dec" data-item="' + id + '" aria-label="수량 빼기">−</button>' +
+          '<span class="q">' + q + '</span>' +
+          '<button type="button" data-ad="inc" data-item="' + id + '" aria-label="수량 더하기">+</button>' +
+        '</span></div>';
+    });
+
+    h += '</div><div class="addfoot">' +
+      '<span class="addsum">' + won(draftTotal()) + '원</span>' +
+      '<button type="button" id="adCancel">취소</button>' +
+      '<button type="button" class="primary" id="adSave"' + (draftTotal() ? '' : ' disabled') + '>저장</button>' +
+      '</div></div>';
+
+    addWrap.innerHTML = h;
+
+    document.getElementById('adDate').addEventListener('change', e => { draft.date = e.target.value; });
+    document.getElementById('adTime').addEventListener('change', e => { draft.time = e.target.value; });
+    addWrap.querySelectorAll('#adPay button').forEach(b => {
+      b.addEventListener('click', () => { draft.pay = b.dataset.pay; renderAdd(); });
+    });
+    addWrap.querySelectorAll('[data-ad]').forEach(b => {
+      b.addEventListener('click', () => {
+        const id = b.dataset.item;
+        const next = (draft.qty[id] || 0) + (b.dataset.ad === 'inc' ? 1 : -1);
+        if (next <= 0) delete draft.qty[id]; else draft.qty[id] = next;
+        renderAdd();
+      });
+    });
+    document.getElementById('adCancel').addEventListener('click', closeAdd);
+    document.getElementById('adSave').addEventListener('click', saveAdd);
+  }
+
+  function saveAdd(){
+    if (!draft || !draftTotal()) return;
+    const lines = Object.keys(draft.qty).map(id => ({ id, qty: draft.qty[id], pr: CATALOG[id].pr }));
+    const amount = draftTotal();
+    const date = draft.date;
+    const rec = Store.addAt(date, draft.time, lines, draft.pay);
+    if (!rec){ toast('저장 실패 — 브라우저 저장공간을 확인해 주세요'); return; }
+    draft = null;
+    selected = date;
+    openId = rec.id;
+    renderAdd();
+    touched();
+    toast('거래를 추가했습니다 · ' + won(amount) + '원');
   }
 
   render();

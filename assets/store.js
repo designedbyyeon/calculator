@@ -38,29 +38,43 @@ window.Store = (function(){
     return p[1] + '/' + p[2] + ' ' + weekday(dateStr);
   }
 
+  /* 결제수단: 'cash' | 'transfer' | '' (지정 안 함) */
+  const PAY_LABEL = { cash:'현금', transfer:'계좌' };
+  function payLabel(v){ return PAY_LABEL[v] || '미지정'; }
+
   function newId(){
     return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
   }
 
   /* lines: [{id, qty}] — 판매 시점의 단가를 함께 저장해 나중에 가격이 바뀌어도 과거 기록이 흔들리지 않게 합니다. */
-  function add(lines){
-    const now = new Date();
-    const rec = {
-      id: newId(),
-      date: dateKey(now),
-      time: timeKey(now),
-      ts: now.getTime(),
-      dirty: true,
-      synced: false,
+  function insert(meta, lines){
+    const rec = Object.assign({ id:newId(), dirty:true, synced:false }, meta, {
       lines: lines.map(l => ({
         id: l.id,
         qty: l.qty,
-        pr: (window.CATALOG[l.id] || {}).pr || 0
+        pr: l.pr != null ? l.pr : ((window.CATALOG[l.id] || {}).pr || 0)
       }))
-    };
+    });
     const s = read();
     s.records.push(rec);
     return write(s) ? rec : null;
+  }
+
+  function add(lines, pay){
+    const now = new Date();
+    return insert({ date:dateKey(now), time:timeKey(now), ts:now.getTime(), pay:pay || '' }, lines);
+  }
+
+  /* 지나간 거래를 직접 넣을 때 — 놓친 판매를 나중에 채워 넣습니다. */
+  function addAt(date, time, lines, pay){
+    const ts = new Date(date + 'T' + (time || '00:00') + ':00').getTime();
+    return insert({
+      date: date,
+      time: time || '00:00',
+      ts: isNaN(ts) ? Date.now() : ts,
+      pay: pay || '',
+      manual: true
+    }, lines);
   }
 
   function all(){
@@ -99,6 +113,7 @@ window.Store = (function(){
       id: r.id,
       date: r.date,
       time: r.time,
+      pay: payLabel(r.pay),
       lines: r.lines.map(l => ({
         id: l.id,
         nm: (window.CATALOG[l.id] || {}).nm || l.id,
@@ -144,9 +159,11 @@ window.Store = (function(){
   function summarize(records){
     const perItem = {};
     const perTeam = { t1:0, t2:0 };
+    const perPay = { cash:0, transfer:0, none:0 };
     let total = 0, count = 0;
 
     records.forEach(r => {
+      perPay[r.pay === 'cash' ? 'cash' : r.pay === 'transfer' ? 'transfer' : 'none'] += recTotal(r);
       r.lines.forEach(l => {
         const info = window.CATALOG[l.id];
         const amt = l.pr * l.qty;
@@ -166,7 +183,7 @@ window.Store = (function(){
         team: window.CATALOG[id].team
       }));
 
-    return { total, count, sales: records.length, perTeam, items };
+    return { total, count, sales: records.length, perTeam, perPay, items };
   }
 
   function todaySummary(){
@@ -175,10 +192,10 @@ window.Store = (function(){
   }
 
   return {
-    add, all, update, remove, clearAll,
+    add, addAt, all, update, remove, clearAll,
     byDate, summarize, todaySummary,
     pendingOps, markSynced,
     recTotal, recCount,
-    dateKey, timeKey, weekday, shortDate
+    dateKey, timeKey, weekday, shortDate, payLabel
   };
 })();

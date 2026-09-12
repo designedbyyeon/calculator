@@ -10,7 +10,8 @@
 const SECRET = '';
 
 const SHEET_NAME = '판매기록';
-const HEADER = ['기록ID', '날짜', '요일', '시각', '기기', '팀', '상품', '단가', '수량', '금액'];
+/* 결제 열은 맨 뒤에 붙입니다 — 이미 쌓인 행의 열 위치가 밀리지 않도록. */
+const HEADER = ['기록ID', '날짜', '요일', '시각', '기기', '팀', '상품', '단가', '수량', '금액', '결제'];
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
 
 function doGet() {
@@ -52,6 +53,17 @@ function getSheet() {
     sheet.appendRow(HEADER);
     sheet.getRange(1, 1, 1, HEADER.length).setFontWeight('bold');
     sheet.setFrozenRows(1);
+  } else {
+    /* 열이 늘어난 경우 머리글만 갱신합니다. 기존 행은 건드리지 않습니다. */
+    var head = sheet.getRange(1, 1, 1, HEADER.length).getValues()[0];
+    var same = true;
+    for (var i = 0; i < HEADER.length; i++) {
+      if (String(head[i]) !== HEADER[i]) { same = false; break; }
+    }
+    if (!same) {
+      sheet.getRange(1, 1, 1, HEADER.length).setValues([HEADER]).setFontWeight('bold');
+      sheet.setFrozenRows(1);
+    }
   }
   return sheet;
 }
@@ -71,8 +83,9 @@ function appendRows(sheet, op, device) {
   const lines = op.lines || [];
   if (!lines.length) return;
   const wd = weekday(op.date);
+  const pay = op.pay || '미지정';
   const rows = lines.map(function (l) {
-    return [op.id, op.date, wd, op.time, device, l.team || '', l.nm || l.id, l.pr, l.qty, l.pr * l.qty];
+    return [op.id, op.date, wd, op.time, device, l.team || '', l.nm || l.id, l.pr, l.qty, l.pr * l.qty, pay];
   });
   sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, HEADER.length).setValues(rows);
 }

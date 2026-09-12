@@ -211,8 +211,9 @@
   }
   .sum .won{ font-family:"Song Myung", serif; font-size:clamp(14px,2.2vh,20px); opacity:.7; }
 
+  .sale-row{ display:flex; gap:8px; }
   .sale{
-    width:100%;
+    flex:1 1 0; min-width:0;
     min-height:clamp(42px,6.2vh,56px);
     border:0; border-radius:10px;
     background:var(--paper); color:var(--ink);
@@ -290,7 +291,10 @@
       </div>
     </div>
     <div class="sum"><span class="n" id="sum">0</span><span class="won">원</span></div>
-    <button class="sale" id="sale" type="button" disabled>판매 완료</button>
+    <div class="sale-row">
+      <button class="sale" id="saleCash" type="button" disabled>현금</button>
+      <button class="sale" id="saleTransfer" type="button" disabled>계좌이체</button>
+    </div>
   </div>
 </div>
 
@@ -372,7 +376,8 @@
   const cntEl   = document.getElementById('cnt');
   const undoBtn = document.getElementById('undo');
   const resetBtn= document.getElementById('reset');
-  const saleBtn = document.getElementById('sale');
+  const saleCash = document.getElementById('saleCash');
+  const saleTransfer = document.getElementById('saleTransfer');
   const toastEl = document.getElementById('toast');
 
   let currentTotal = 0;
@@ -406,8 +411,8 @@
 
     undoBtn.disabled = history.length === 0;
     resetBtn.disabled = count === 0;
-    saleBtn.disabled = count === 0;
-    saleBtn.textContent = count === 0 ? '판매 완료' : '판매 완료 · ' + won(total) + '원';
+    saleCash.disabled = count === 0;
+    saleTransfer.disabled = count === 0;
     if (count === 0) disarm();
     save();
   }
@@ -448,20 +453,22 @@
     render();
   });
 
-  saleBtn.addEventListener('click', () => {
+  function completeSale(pay){
     const lines = Object.keys(cart).map(id => ({ id, qty: cart[id] }));
     if (!lines.length) return;
     const amount = currentTotal;
-    const rec = Store.add(lines);
+    const rec = Store.add(lines, pay);
     if (!rec){
       toast('저장 실패 — 브라우저 저장공간을 확인해 주세요');
       return;
     }
     cart = {}; history = [];
     disarm(); buzz(24); render(); refreshToday();
-    toast('저장 완료 · ' + won(amount) + '원');
+    toast(Store.payLabel(pay) + ' · ' + won(amount) + '원 저장');
     Sync.flush();
-  });
+  }
+  saleCash.addEventListener('click', () => completeSale('cash'));
+  saleTransfer.addEventListener('click', () => completeSale('transfer'));
 
   let armed = false, armTimer = null;
   function disarm(){
