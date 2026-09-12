@@ -6,7 +6,7 @@ window.TEAMS = [
   { key:'t1', name:'글자취미팀', items:[
     { id:'g1', nm:'글자취미 1권',        pr:37000, main:true },
     { id:'g2', nm:'글자취미 디지털 USB', pr:30000 },
-    { id:'g3', nm:'얼마나 오렌지',       pr:25000 },
+    { id:'g3', nm:'얼마나 오렌지',       pr:23000 },
     { id:'g5', nm:'글자취미+USB 세트',   pr:45000 }
   ]},
   { key:'t2', name:'한주한자팀', items:[
