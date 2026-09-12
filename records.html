@@ -546,7 +546,8 @@
     h += '<div class="edit-foot">';
     if (missing.length){
       h += '<select data-act="addItem"><option value="">상품 추가…</option>' +
-        missing.map(id => '<option value="' + id + '">' + esc(CATALOG[id].nm) + '</option>').join('') +
+        missing.map(id => '<option value="' + id + '">' + esc(CATALOG[id].nm) +
+          (CATALOG[id].retired ? ' (단종)' : '') + '</option>').join('') +
         '</select>';
     }
     h += '<label>날짜 <input type="date" data-act="date" value="' + r.date + '"></label>';
