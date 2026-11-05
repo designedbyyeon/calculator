@@ -252,7 +252,8 @@
   .rec .ln{ flex:1 1 auto; min-width:0; font-size:12.5px; line-height:1.4; }
   .rec .amt{ font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; font-size:14px; font-weight:600; }
   .rec .pay{ font-size:11px; padding:2px 7px; border-radius:999px; background:var(--pay-cash-bg); color:var(--pay-cash-fg); white-space:nowrap; }
-  .rec .pay.tr{ background:var(--pay-tr-bg); color:var(--pay-tr-fg); }
+  /* nc = 현금이 아닌 결제 (카드) */
+  .rec .pay.nc{ background:var(--pay-tr-bg); color:var(--pay-tr-fg); }
   .rec .del{
     flex:0 0 auto; width:30px; height:30px; border:1px solid var(--line);
     border-radius:8px; background:var(--surface); color:var(--ink-2);
@@ -313,7 +314,7 @@
     <div class="sum"><span class="n" id="sum">0</span><span class="won">원</span></div>
     <div class="sale-row">
       <button class="sale" id="saleCash" type="button" disabled>현금</button>
-      <button class="sale" id="saleTransfer" type="button" disabled>계좌이체</button>
+      <button class="sale" id="saleCard" type="button" disabled>카드</button>
     </div>
   </div>
 </div>
@@ -328,7 +329,7 @@
     <div class="sum-cards">
       <div class="card"><div class="k">총 매출</div><div class="v" id="sAmt">0</div></div>
       <div class="card"><div class="k">판매 건수</div><div class="v" id="sCnt">0</div></div>
-      <div class="card"><div class="k">현금 / 계좌</div><div class="v" id="sPay">0 / 0</div></div>
+      <div class="card"><div class="k">현금 / 카드</div><div class="v" id="sPay">0 / 0</div></div>
     </div>
 
     <p class="hint">
@@ -424,7 +425,7 @@
   const undoBtn = document.getElementById('undo');
   const resetBtn = document.getElementById('reset');
   const saleCash = document.getElementById('saleCash');
-  const saleTransfer = document.getElementById('saleTransfer');
+  const saleCard = document.getElementById('saleCard');
   const toastEl = document.getElementById('toast');
   const stockBtn = document.getElementById('openStock');
 
@@ -488,7 +489,7 @@
     undoBtn.disabled = history.length === 0;
     resetBtn.disabled = count === 0;
     saleCash.disabled = count === 0;
-    saleTransfer.disabled = count === 0;
+    saleCard.disabled = count === 0;
     if (count === 0) disarm();
 
     /* 재고 버튼에 품절·임박 표시 */
@@ -536,7 +537,7 @@
     toast(Store.payLabel(pay) + ' · ' + won(amount) + '원 저장');
   }
   saleCash.addEventListener('click', () => completeSale('cash'));
-  saleTransfer.addEventListener('click', () => completeSale('transfer'));
+  saleCard.addEventListener('click', () => completeSale('card'));
 
   let armed = false, armTimer = null;
   function disarm(){
@@ -608,7 +609,7 @@
     const s = Store.allSummary();
     document.getElementById('sAmt').textContent = won(s.total);
     document.getElementById('sCnt').textContent = won(s.sales);
-    document.getElementById('sPay').textContent = won(s.perPay.cash) + ' / ' + won(s.perPay.transfer);
+    document.getElementById('sPay').textContent = won(s.perPay.cash) + ' / ' + won(s.perPay.card);
 
     const recs = Store.all();
     recsEl.innerHTML = '';
@@ -623,7 +624,7 @@
       div.innerHTML =
         '<span class="t">' + r.time + '</span>' +
         '<span class="ln">' + names + '</span>' +
-        '<span class="pay' + (r.pay === 'transfer' ? ' tr' : '') + '">' + Store.payLabel(r.pay) + '</span>' +
+        '<span class="pay' + (r.pay === 'cash' ? '' : ' nc') + '">' + Store.payLabel(r.pay) + '</span>' +
         '<span class="amt">' + won(Store.recTotal(r)) + '</span>' +
         '<button class="del" type="button" title="이 기록 지우기" aria-label="이 기록 지우기">&times;</button>';
       div.querySelector('.del').addEventListener('click', () => {

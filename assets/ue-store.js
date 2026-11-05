@@ -27,7 +27,8 @@ window.Store = (function(){
     return p(d.getHours()) + ':' + p(d.getMinutes());
   }
 
-  const PAY_LABEL = { cash:'현금', transfer:'계좌' };
+  /* 결제수단: 'cash' | 'card'. 'transfer'는 계좌이체를 쓰던 때의 기록입니다. */
+  const PAY_LABEL = { cash:'현금', card:'카드', transfer:'계좌' };
   function payLabel(v){ return PAY_LABEL[v] || '미지정'; }
 
   function newId(){
@@ -68,10 +69,12 @@ window.Store = (function(){
   function recCount(rec){ return rec.lines.reduce((n, l) => n + l.qty, 0); }
 
   function summarize(records){
-    const perItem = {}, perPay = { cash:0, transfer:0, none:0 };
+    const perItem = {}, perPay = { cash:0, card:0, none:0 };
     let total = 0, count = 0;
     records.forEach(r => {
-      perPay[r.pay === 'cash' ? 'cash' : r.pay === 'transfer' ? 'transfer' : 'none'] += recTotal(r);
+      /* 옛 'transfer' 기록도 현금이 아닌 쪽으로 함께 셉니다. */
+      perPay[r.pay === 'cash' ? 'cash'
+           : (r.pay === 'card' || r.pay === 'transfer') ? 'card' : 'none'] += recTotal(r);
       r.lines.forEach(l => {
         if (!perItem[l.id]) perItem[l.id] = { id:l.id, qty:0, amt:0 };
         perItem[l.id].qty += l.qty;
