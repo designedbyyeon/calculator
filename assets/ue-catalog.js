@@ -8,14 +8,16 @@ window.UE_SINGLES = [
   { id:'g1',  nm:'글자취미 1',       pr:37000, size:'136×200mm', big:true },
   { id:'g2',  nm:'글자취미 2',       pr:42000, size:'136×200mm', big:true },
   { id:'g1p', nm:'글자취미 1 PDF',   pr:30000, size:'136×200mm' },
-  { id:'g2p', nm:'글자취미 2 PDF',   pr:35000, size:'136×200mm' },
+  { id:'g2p', nm:'글자취미 2 PDF',   pr:29000, size:'136×200mm' },
   { id:'or',  nm:'얼마나 오렌지',    pr:23000, size:'148×162mm' },
   { id:'ca',  nm:'카라바조',         pr:18000, size:'130×180mm' },
-  { id:'lx',  nm:'레터링 정밀검사',  pr:15000, size:'90×110mm'  }
+  { id:'lx',  nm:'레터링 정밀검사',  pr:15000, size:'90×110mm'  },
+  { id:'lp',  nm:'사랑해 펀치',      pr:10000 }
 ];
 
 window.UE_SETS = [
-  { id:'s1', nm:'글자취미 1 + PDF 세트', pr:45000, parts:['g1','g1p'], big:true }
+  { id:'s1', nm:'글자취미 1 + PDF 세트', pr:45000, parts:['g1','g1p'] },
+  { id:'s2', nm:'글자취미 2 + PDF 세트', pr:60000, parts:['g2','g2p'] }
 ];
 
 /* 판매 종료 상품 — 버튼에는 안 보이지만 과거 기록의 이름·단가는 남습니다. */

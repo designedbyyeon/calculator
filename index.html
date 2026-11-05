@@ -89,7 +89,8 @@
     font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums;
     font-size:clamp(11px,1.6vh,14px); font-weight:500; color:var(--ink-2);
   }
-  .grid .item:last-child:nth-child(even){ grid-column:span 2; }
+  /* 마지막 줄에 한 칸만 남으면 가로로 채웁니다 — 칸 수는 렌더에서 셉니다. */
+  .item.wide{ grid-column:span 2; }
 
   .item.big{ grid-column:span 2; background:var(--soft); border-color:var(--line-accent); }
   .item.big .nm{ font-size:clamp(15px,2.5vh,21px); font-weight:700; }
@@ -382,6 +383,7 @@
         '<span class="group-sub" id="sub-' + g.key + '">0<span style="opacity:.6">원</span></span>' +
       '</div><div class="grid"></div>';
     const grid = sec.querySelector('.grid');
+    let cols = 0, lastTile = null;
 
     g.items.forEach(it => {
       const b = document.createElement('button');
@@ -404,7 +406,10 @@
         if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.stopPropagation(); add(it.id, -1); }
       });
       grid.appendChild(b);
+      cols += it.big ? 2 : 1;
+      lastTile = b;
     });
+    if (lastTile && cols % 2) lastTile.classList.add('wide');
     board.appendChild(sec);
   });
 
