@@ -243,6 +243,60 @@
     font-size:18px; font-weight:600; margin-top:2px;
   }
 
+  /* ── 구글 시트 연동 ───────────────────── */
+  .sync-dot{
+    flex:0 0 auto; width:7px; height:7px; border-radius:50%;
+    background:var(--line-2); display:none;
+  }
+  .sync-dot.on{ display:inline-block; }
+  .sync-dot.ok{ background:#2E9E5B; }
+  .sync-dot.wait{ background:#C98A1B; }
+  .sync-dot.err{ background:var(--t2); }
+
+  .sync{
+    margin-top:20px; border:1px solid var(--line); border-radius:12px;
+    background:var(--surface); overflow:hidden;
+  }
+  .sync-head{
+    width:100%; display:flex; align-items:center; gap:9px;
+    padding:12px 14px; border:0; background:none; color:var(--ink);
+    font:inherit; text-align:left; cursor:pointer;
+  }
+  .sync-title{ font-size:13px; font-weight:600; }
+  .sync-state{
+    margin-left:auto; display:inline-flex; align-items:center; gap:6px;
+    font-size:12px; color:var(--ink-2);
+  }
+  .sync-state .led{ width:7px; height:7px; border-radius:50%; background:var(--line-2); }
+  .sync-state.ok .led{ background:#2E9E5B; }
+  .sync-state.wait .led{ background:#C98A1B; }
+  .sync-state.err .led{ background:var(--t2); }
+  .sync-head .chev{ opacity:.4; font-size:12px; }
+  .sync-body{ display:none; padding:2px 14px 15px; border-top:1px solid var(--line); }
+  .sync.open .sync-body{ display:block; }
+  .sync .f{ margin-top:12px; }
+  .sync label{ display:block; font-size:12px; font-weight:600; margin-bottom:5px; }
+  .sync input{
+    width:100%; box-sizing:border-box; padding:9px 10px;
+    border:1px solid var(--line-2); border-radius:9px;
+    background:var(--paper); color:var(--ink); font:inherit; font-size:13px;
+  }
+  .sync .note{ margin-top:5px; font-size:11.5px; line-height:1.6; color:var(--ink-2); }
+  .sync-btns{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .sync-btns button{
+    padding:8px 12px; border:1px solid var(--line-2); border-radius:9px;
+    background:var(--surface); color:var(--ink);
+    font:inherit; font-size:12.5px; font-weight:600; cursor:pointer;
+  }
+  .sync-btns button.primary{ background:var(--ink); color:var(--surface); border-color:var(--ink); }
+  .sync-btns button:disabled{ opacity:.35; cursor:default; }
+  .sync-msg{
+    margin-top:10px; min-height:1em; font-size:12px; line-height:1.6;
+    color:var(--ink-2); word-break:break-all;
+  }
+  .sync-msg.ok{ color:#2E9E5B; }
+  .sync-msg.err{ color:var(--t2); }
+
   h3.sec{ margin:20px 0 8px; font-size:13px; font-weight:600; color:var(--ink-2); letter-spacing:.04em; }
   .rec{
     display:flex; align-items:center; gap:10px;
@@ -297,6 +351,7 @@
 <div class="app">
   <header>
     <span class="brand">글자취미</span>
+    <span class="sync-dot" id="syncDot" title="구글 시트"></span>
     <span class="fair">UNLIMITED EDITION</span>
     <span class="today">오늘 <b id="todayAmt">0</b>원 · <b id="todayCnt">0</b>건</span>
     <button class="stock-btn" id="openStock" type="button">재고</button>
@@ -347,6 +402,38 @@
       <tfoot id="stockFoot"></tfoot>
     </table>
 
+    <section class="sync" id="sync">
+      <button class="sync-head" type="button" id="syncToggle">
+        <span class="sync-title">구글 시트</span>
+        <span class="sync-state" id="syncState"><i class="led"></i><span id="syncStateText">꺼짐</span></span>
+        <span class="chev">▾</span>
+      </button>
+      <div class="sync-body">
+        <div class="f">
+          <label for="syncDevice">이 기기 이름</label>
+          <input id="syncDevice" type="text" autocomplete="off" placeholder="예: 계산 담당 폰">
+          <div class="note">시트의 <b>기기</b> 열에 들어갑니다. 두 사람이 같이 팔 때 누가 받았는지 구분됩니다.</div>
+        </div>
+        <div class="f">
+          <label for="syncUrl">웹 앱 주소</label>
+          <input id="syncUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec">
+          <div class="note">배포할 때 나온 <b>/exec</b> 로 끝나는 주소를 폰마다 한 번만 넣으면 됩니다.
+          다른 폰은 아래 <b>다른 폰 연결 링크</b>로 열면 입력 없이 연결됩니다.</div>
+        </div>
+        <div class="f">
+          <label for="syncSecret">비밀 키 (선택)</label>
+          <input id="syncSecret" type="text" autocomplete="off" placeholder="스크립트의 SECRET 과 같은 값">
+        </div>
+        <div class="sync-btns">
+          <button type="button" class="primary" id="syncSave">저장하고 연결</button>
+          <button type="button" id="syncNow">지금 전송</button>
+          <button type="button" id="syncInvite">다른 폰 연결 링크</button>
+          <button type="button" id="syncOff">연동 끄기</button>
+        </div>
+        <div class="sync-msg" id="syncMsg"></div>
+      </div>
+    </section>
+
     <h3 class="sec">판매 기록</h3>
     <div id="recs"></div>
   </div>
@@ -356,6 +443,7 @@
 
 <script src="assets/ue-catalog.js"></script>
 <script src="assets/ue-store.js"></script>
+<script src="assets/ue-sync.js"></script>
 <script>
 (function(){
   const CART_KEY = 'ue-cart-v1';
@@ -540,6 +628,7 @@
     disarm(); buzz(24); render(); refreshToday();
     if (sheet.classList.contains('open')) paintSheet();
     toast(Store.payLabel(pay) + ' · ' + won(amount) + '원 저장');
+    Sync.flush();
   }
   saleCash.addEventListener('click', () => completeSale('cash'));
   saleCard.addEventListener('click', () => completeSale('card'));
@@ -637,6 +726,7 @@
         Store.remove(r.id);
         paintSheet(); render(); refreshToday();
         toast('기록을 지웠습니다');
+        Sync.flush();
       });
       recsEl.appendChild(div);
     });
@@ -663,9 +753,100 @@
     }
   });
 
+  /* ── 구글 시트 연동 ───────────────────── */
+  const syncBox   = document.getElementById('sync');
+  const syncDot   = document.getElementById('syncDot');
+  const syncState = document.getElementById('syncState');
+  const syncText  = document.getElementById('syncStateText');
+  const syncMsg   = document.getElementById('syncMsg');
+  const fUrl      = document.getElementById('syncUrl');
+  const fDevice   = document.getElementById('syncDevice');
+  const fSecret   = document.getElementById('syncSecret');
+
+  function note(msg, kind){
+    syncMsg.textContent = msg || '';
+    syncMsg.className = 'sync-msg' + (kind ? ' ' + kind : '');
+  }
+
+  function paintSync(st){
+    let cls = '', text = '';
+    if (!st.enabled)        { text = '꺼짐'; }
+    else if (st.busy)       { cls = 'wait'; text = '보내는 중'; }
+    else if (st.lastError)  { cls = 'err';  text = st.pending + '건 못 보냄'; }
+    else if (st.pending)    { cls = 'wait'; text = st.pending + '건 대기'; }
+    else                    { cls = 'ok';   text = '보냄'; }
+    syncState.className = 'sync-state' + (cls ? ' ' + cls : '');
+    syncText.textContent = text;
+    syncDot.className = 'sync-dot' + (st.enabled ? ' on' : '') + (cls ? ' ' + cls : '');
+  }
+
+  function fillSyncForm(){
+    const c = Sync.config();
+    fUrl.value = c.url;
+    fDevice.value = c.device;
+    fSecret.value = c.secret;
+  }
+
+  document.getElementById('syncToggle').addEventListener('click', () => {
+    syncBox.classList.toggle('open');
+  });
+
+  document.getElementById('syncSave').addEventListener('click', () => {
+    const url = fUrl.value.trim();
+    if (url.indexOf('/exec') < 0){
+      note('주소가 /exec 로 끝나야 합니다. 배포할 때 나온 웹 앱 주소를 넣어 주세요.', 'err');
+      return;
+    }
+    note('확인하는 중…');
+    Sync.test(url).then(j => {
+      Sync.setConfig({
+        url: (url === Sync.DEFAULT_URL ? '' : url),
+        device: fDevice.value.trim(),
+        secret: fSecret.value.trim(),
+        enabled: true
+      });
+      note('연결됐습니다 · 시트에 ' + (j.rows || 0) + '줄 있습니다', 'ok');
+      Sync.flush();
+    }).catch(err => {
+      note('연결 실패 — ' + (err && err.message ? err.message : '시트가 응답하지 않습니다'), 'err');
+    });
+  });
+
+  document.getElementById('syncNow').addEventListener('click', () => {
+    const before = Sync.status().pending;
+    if (!before){ note('보낼 기록이 없습니다', 'ok'); return; }
+    note('보내는 중…');
+    Sync.flush().then(r => {
+      if (r.error) note('보내지 못했습니다 — ' + r.error, 'err');
+      else note((r.sent || 0) + '건 보냈습니다', 'ok');
+    });
+  });
+
+  document.getElementById('syncInvite').addEventListener('click', () => {
+    const link = Sync.inviteLink();
+    if (!link){ note('먼저 주소를 저장해 주세요', 'err'); return; }
+    const say = () => note('링크를 복사했습니다. 다른 폰에서 이 링크로 열면 바로 연결됩니다.', 'ok');
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(link).then(say).catch(() => note(link));
+    } else {
+      note(link);
+    }
+  });
+
+  document.getElementById('syncOff').addEventListener('click', () => {
+    Sync.setConfig({ enabled:false });
+    paintSync(Sync.status());
+    note('연동을 껐습니다. 기록은 폰에 계속 쌓입니다.', 'ok');
+  });
+
+  fillSyncForm();
+  Sync.onChange(paintSync);
+  if (Sync.applyLink()){ fillSyncForm(); toast('구글 시트에 연결됐습니다'); }
+  Sync.start();
+
   render();
   refreshToday();
-  window.addEventListener('pageshow', () => { refreshToday(); render(); });
+  window.addEventListener('pageshow', () => { refreshToday(); render(); Sync.flush(); });
 })();
 </script>
 </body>

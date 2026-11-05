@@ -5,13 +5,15 @@ window.Store = (function(){
 
   /* ── 판매 기록 ───────────────────────── */
   function read(){
+    const blank = { v:1, records:[], tombstones:[] };
     try {
       const raw = localStorage.getItem(REC_KEY);
-      if (!raw) return { v:1, records:[] };
+      if (!raw) return blank;
       const s = JSON.parse(raw);
-      if (!s || !Array.isArray(s.records)) return { v:1, records:[] };
+      if (!s || !Array.isArray(s.records)) return blank;
+      if (!Array.isArray(s.tombstones)) s.tombstones = [];
       return s;
-    } catch(e){ return { v:1, records:[] }; }
+    } catch(e){ return blank; }
   }
   function write(state){
     try { localStorage.setItem(REC_KEY, JSON.stringify(state)); return true; }
@@ -44,6 +46,8 @@ window.Store = (function(){
       time: timeKey(now),
       ts: now.getTime(),
       pay: pay || '',
+      dirty: true,   /* 아직 시트로 못 보낸 기록 */
+      synced: false,
       lines: lines.map(l => ({
         id: l.id,
         qty: l.qty,
@@ -59,11 +63,54 @@ window.Store = (function(){
 
   function remove(id){
     const s = read();
+    const rec = s.records.find(r => r.id === id);
+    /* 시트에 이미 올라간 건만 삭제 요청을 남깁니다. */
+    if (rec && rec.synced && s.tombstones.indexOf(id) < 0) s.tombstones.push(id);
     s.records = s.records.filter(r => r.id !== id);
     return write(s);
   }
 
-  function clearAll(){ write({ v:1, records:[] }); }
+  function clearAll(){
+    const s = read();
+    const tombs = s.tombstones.slice();
+    s.records.forEach(r => { if (r.synced && tombs.indexOf(r.id) < 0) tombs.push(r.id); });
+    write({ v:1, records:[], tombstones: tombs });
+  }
+
+  /* ── 구글 시트로 보낼 것 ─────────────────
+   * 보낼 줄에는 상품 이름과 구분(단품/세트)을 함께 실어 보냅니다.
+   * 시트는 받은 그대로 적기만 하므로, 나중에 이름이 바뀌어도 옛 행은 그대로 남습니다. */
+  function pendingOps(){
+    const s = read();
+    const ops = s.records.filter(r => r.dirty).map(r => ({
+      op: 'upsert',
+      id: r.id,
+      date: r.date,
+      time: r.time,
+      pay: payLabel(r.pay),
+      lines: r.lines.map(l => {
+        const it = window.CATALOG[l.id] || {};
+        return {
+          id: l.id,
+          nm: it.nm || l.id,
+          team: it.group === 'set' ? '세트' : '단품',
+          pr: l.pr,
+          qty: l.qty
+        };
+      })
+    }));
+    s.tombstones.forEach(id => ops.push({ op:'delete', id: id }));
+    return ops;
+  }
+
+  function markSynced(ops){
+    const s = read();
+    const upserted = {}, deleted = {};
+    ops.forEach(o => { (o.op === 'delete' ? deleted : upserted)[o.id] = true; });
+    s.records.forEach(r => { if (upserted[r.id]){ r.dirty = false; r.synced = true; } });
+    s.tombstones = s.tombstones.filter(id => !deleted[id]);
+    write(s);
+  }
 
   function recTotal(rec){ return rec.lines.reduce((n, l) => n + l.pr * l.qty, 0); }
   function recCount(rec){ return rec.lines.reduce((n, l) => n + l.qty, 0); }
@@ -147,6 +194,7 @@ window.Store = (function(){
     summarize, todaySummary, allSummary,
     recTotal, recCount,
     dateKey, timeKey, payLabel,
+    pendingOps, markSynced,
     readStock, setStock, soldByPart, stockRows
   };
 })();
