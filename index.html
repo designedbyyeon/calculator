@@ -48,6 +48,7 @@
   /* ── 버튼판 ─────────────────────────── */
   .board{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; gap:var(--gap); }
   .group{ display:flex; flex-direction:column; gap:calc(var(--gap) * .8); min-height:0; }
+  /* 높이 배분은 렌더에서 줄 수대로 정합니다. 아래는 스크립트 전의 기본값입니다. */
   .group.singles{ flex:5 1 0; }
   .group.sets{ flex:1.3 1 0; }
   .group-bar{ flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:0 2px; }
@@ -73,8 +74,8 @@
   /* ── 상품 타일 ──────────────────────── */
   .item{
     position:relative;
-    display:flex; flex-direction:column; justify-content:center; gap:2px;
-    padding:clamp(6px,1.2vh,12px) clamp(8px,2vw,14px);
+    display:flex; flex-direction:column; justify-content:center; gap:1px;
+    padding:clamp(4px,.75vh,12px) clamp(8px,2vw,14px);
     border:1px solid var(--line); border-radius:var(--r);
     background:var(--surface); color:var(--ink);
     box-shadow:var(--shadow);
@@ -84,7 +85,7 @@
   }
   .item:active{ transform:scale(.975); }
   .item:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
-  .item .nm{ font-size:clamp(12px,1.85vh,16px); font-weight:500; line-height:1.25; }
+  .item .nm{ font-size:clamp(12px,1.85vh,16px); font-weight:500; line-height:1.2; }
   .item .pr{
     font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums;
     font-size:clamp(11px,1.6vh,14px); font-weight:500; color:var(--ink-2);
@@ -93,8 +94,8 @@
   .item.wide{ grid-column:span 2; }
 
   .item.big{ grid-column:span 2; background:var(--soft); border-color:var(--line-accent); }
-  .item.big .nm{ font-size:clamp(15px,2.5vh,21px); font-weight:700; }
-  .item.big .pr{ font-size:clamp(12px,1.8vh,15px); color:var(--accent); }
+  .item.big .nm{ font-size:clamp(14px,2.1vh,21px); font-weight:700; }
+  .item.big .pr{ font-size:clamp(11px,1.55vh,15px); color:var(--accent); }
 
   /* 남은 재고 뱃지 */
   .item .left{
@@ -498,6 +499,8 @@
       lastTile = b;
     });
     if (lastTile && cols % 2) lastTile.classList.add('wide');
+    /* 단품이 많아지든 세트가 늘어나든, 줄 수만큼 높이를 가져가게 합니다. */
+    sec.style.flex = Math.max(1, Math.ceil(cols / 2)) + ' 1 0';
     board.appendChild(sec);
   });
 
